@@ -1,5 +1,4 @@
 "use strict";
-/* Stránka Poradca: stav indexu, zoznam zdrojov a pripravené otázky. Rozhovor je v chat.js. */
 const OTAZKY = {
   "Komponenty a kompatibilita": [
     "Aký socket má Ryzen 5 5600X a ktoré dosky ho podporujú?",

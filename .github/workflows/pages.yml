@@ -1,4 +1,4 @@
-# Nasadí webovú stránku (app/static) na GitHub Pages pri každom pushi do main.
+
 name: Web na GitHub Pages
 
 on:

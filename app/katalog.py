@@ -1,9 +1,4 @@
-"""Katalóg konfigurátora zostavený SPARQL dopytmi nad ontológiou zo Zadania 1.
 
-Ontológia obsahuje všetko, čo súvisí s kompatibilitou (parametre, ceny,
-hotové zostavy). Súbor vizual.json dopĺňa iba vzhľad pre 3D model (farebný štýl,
-rozmiestnenie dielov v skrinke), ktorý do ontológie nepatrí.
-"""
 import json
 from collections import defaultdict
 
@@ -171,9 +166,22 @@ def load():
     rules = {k: {"nazov": v[0], "vysv": v[1], "swrl": swrl.get(k, "rozšírenie webu (uzavretý svet)" if k.startswith("X") else "v ontológii nie je zapísané ako SWRL pravidlo")} for k, v in PRAVIDLA.items()}
 
     _cache = {"kategorie": KAT, "komponenty": C, "zostavy": presets, "pravidla": rules, "tiers": TIERS,
+              "varovania": _varovania(),
               "layout": viz["layout"], "board": viz["board"],
               "zdroj": {"backend": store.backend, "trojic": store.select("SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }")[0]["n"]}}
     return _cache
+
+
+def _varovania():
+    """Údaje, ktoré majú mať jednu hodnotu, ale v ontológii ich je viac (typicky po uložení
+    odvodených tvrdení reasonera, keď sa individuá zlúčili cez owl:sameAs)."""
+    pary = {tuple(sorted((local(r["a"]), local(r["b"])))) for r in store.select("SELECT ?a ?b WHERE { ?a owl:sameAs ?b }")}
+    out = [f"V ontológii je {a} = {b} (owl:sameAs)." for a, b in sorted(pary) if a != b]
+    for r in store.select("""SELECT ?i ?p (COUNT(DISTINCT ?o) AS ?n) WHERE {
+            ?i ?p ?o . FILTER(?p IN (:maFormFaktorDosky, :maFormFaktorZdroja, :maSocket, :maTypPamate)) }
+            GROUP BY ?i ?p HAVING (COUNT(DISTINCT ?o) > 1)"""):
+        out.append(f"{local(r['i'])} má {r['n']} hodnoty vlastnosti {local(r['p'])}, má mať jednu.")
+    return out
 
 
 def sum_price(C, b):

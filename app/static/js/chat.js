@@ -1,7 +1,4 @@
 "use strict";
-/* Rozhovor s poradcom (RAG). Používa ho stránka Poradca aj bočný panel v konfigurátore
-   a hotových zostavách. Odpoveď prichádza po kúskoch (NDJSON): najprv nájdené úryvky,
-   potom text odpovede s odkazmi [1]…[n]. */
 
 const DRUH = {pdf: "PDF", ontologia: "ontológia", katalog: "konfigurátor"};
 

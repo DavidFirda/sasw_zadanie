@@ -1,5 +1,5 @@
 "use strict";
-/* Hotové zostavy: filter podľa cenovej kategórie a zoradenie podľa ceny. */
+
 spusti(() => {
   let tier = new URLSearchParams(location.search).get("kategoria") || "vsetky", smer = "asc";
   const kresli = () => {

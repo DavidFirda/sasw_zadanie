@@ -1,4 +1,4 @@
-/* 2D bočný pohľad v mierke 1 mm = 1 jednotka (náhľady a záložné zobrazenie) */
+
 "use strict";
 
 function partOpen(cat, label, bad, changed, extraCls=""){

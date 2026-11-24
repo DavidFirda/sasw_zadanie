@@ -1,5 +1,4 @@
-"""Text z katalógu konfigurátora pre RAG: komponenty, pravidlá, hotové zostavy
-a popis zostavy, ktorú má používateľ práve otvorenú v konfigurátore."""
+
 from katalog import get, KAT, TIERS
 from kontrola import checks, missing, price, power, FF_NAME
 
@@ -49,16 +48,20 @@ def uryvky_katalogu():
 
 
 def popis_zostavy(b):
-    """Krátky popis aktuálnej zostavy z konfigurátora aj s výsledkami kontrol."""
+    """Popis zostavy, ktorú má používateľ práve otvorenú: diely s parametrami a výsledky kontrol."""
     C = get()["komponenty"]
     riadky = []
     for k in KAT:
         v = b.get(k["id"])
-        ids = v if isinstance(v, list) else [v]
-        prazdne = "bez grafickej karty (integrovaná grafika procesora)" if k["id"] == "grafika" else "nevybraté"
-        riadky.append(f"- {k['nazov']}: {', '.join(C[i]['nazov'] for i in ids if i in C) or prazdne}")
-    kontroly = "; ".join(("OK " if c["ok"] else "CHYBA ") + c["rule"] + " " + c["text"] for c in checks(b))
+        ids = [i for i in (v if isinstance(v, list) else [v]) if i in C]
+        if not ids:
+            riadky.append(f"- {k['nazov']}: " + ("bez grafickej karty (integrovaná grafika procesora)" if k["id"] == "grafika" else "nevybraté"))
+        for i in ids:
+            riadky.append(f"- {k['nazov']}: {C[i]['nazov']} ({spec(C[i])}, cena {C[i]['cena']:.0f} €)")
+    kontroly = "\n".join(("- v poriadku: " if c["ok"] else "- PROBLÉM: ") + f"{c['text']} (pravidlo {c['rule']})" for c in checks(b))
     chyba = missing(b)
-    return ("Zostava, ktorú má používateľ otvorenú v konfigurátore:\n" + "\n".join(riadky)
-            + f"\nCena {price(b):.0f} €, odhad spotreby {power(b)} W.\nKontroly: {kontroly}"
-            + (f"\nChýba: {', '.join(chyba)}" if chyba else ""))
+    return ("ZOSTAVA POUŽÍVATEĽA – aktuálny stav v konfigurátore, otázka sa týka práve tejto zostavy:\n"
+            + "\n".join(riadky)
+            + f"\nCelková cena {price(b):.0f} €, odhad spotreby {power(b)} W (TDP procesora + príkon grafiky + 75 W)."
+            + f"\nVýsledky kontroly kompatibility:\n{kontroly}"
+            + (f"\nChýba: {', '.join(KATMAP[m]['nazov'] for m in chyba)}" if chyba else ""))

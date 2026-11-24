@@ -1,5 +1,4 @@
-/* Spoločný kód: načítanie katalógu z API (ontológia cez SPARQL), kontroly
-   kompatibility, hlavička a päta, náhľady zostáv. */
+
 "use strict";
 let C = {}, PRESETS = [], RULES = {}, TIERS = {}, LAYOUT = {}, BOARD = {}, KAT = [], KATMAP = {};
 let activeCat = "grafika", prevBuild = null;
@@ -8,8 +7,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt
 const eur = n => new Intl.NumberFormat("sk-SK", {style:"currency", currency:"EUR", maximumFractionDigits: n % 1 ? 2 : 0}).format(n);
 const $ = id => document.getElementById(id);
 
-/* Na GitHub Pages je len web, server s katalógom a poradcom beží u vás na localhoste.
-   Inú adresu servera nastavíte v URL: ?api=http://localhost:9000 */
+
 const API_BASE = new URLSearchParams(location.search).get("api") ?? (location.hostname.endsWith("github.io") ? "http://localhost:8000" : "");
 async function apiGet(u){ const r = await fetch(API_BASE + u); if(!r.ok) throw new Error(`${u}: ${r.status}`); return r.json(); }
 
@@ -17,6 +15,15 @@ async function nacitajKatalog(){
   const k = await apiGet("/api/katalog");
   C = k.komponenty; PRESETS = k.zostavy; RULES = k.pravidla; TIERS = k.tiers; LAYOUT = k.layout; BOARD = k.board; KAT = k.kategorie;
   KATMAP = Object.fromEntries(KAT.map(x => [x.id, x]));
+  if(k.varovania?.length) VAROVANIA = k.varovania;
+}
+let VAROVANIA = [];
+/* Upozornenie na chybné údaje v ontológii (napr. zlúčené form faktory). */
+function varovanieOntologie(){
+  if(!VAROVANIA.length) return "";
+  return `<details class="info-box"><summary><b>Ontológia obsahuje protichodné údaje, kontrola kompatibility nemusí byť správna.</b></summary>
+    <ul>${VAROVANIA.map(v => `<li>${esc(v)}</li>`).join("")}</ul>
+    <p class="maly jemny">Opravte ontológiu v Protégé, uložte ju do <code>data/ontologia/</code> a reštartujte server.</p></details>`;
 }
 
 /* ============================================================
@@ -145,6 +152,7 @@ async function spusti(init, {katalog = true} = {}){
     for(;;){ await new Promise(r => setTimeout(r, 3000)); try{ await apiGet("/api/stav"); location.reload(); return; }catch(e){} }
   }
   init && init();
+  document.querySelector("main")?.insertAdjacentHTML("afterbegin", VAROVANIA.length ? `<div class="obal-varovanie">${varovanieOntologie()}</div>` : "");
 }
 
 /* ============================================================

@@ -1,6 +1,5 @@
 const $ = (s) => document.querySelector(s);
-// Na GitHub Pages je len táto stránka, server s RAG beží u vás na localhoste.
-// Inú adresu servera nastavíte v URL: ?api=http://localhost:9000
+
 const NA_PAGES = location.hostname.endsWith("github.io");
 const API = new URLSearchParams(location.search).get("api") ?? (NA_PAGES ? "http://localhost:8000" : "");
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));

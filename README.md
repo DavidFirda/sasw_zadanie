@@ -173,6 +173,11 @@ data/
 - **Chyba „model … not found"**: `ollama pull <model>`.
 - **GitHub stránka sa nepripojí, localhost áno**: v Chrome povoľte prístup k lokálnej sieti
   (ikona vľavo od adresy → Nastavenia lokality). Safari to môže blokovať.
+- **Konfigurátor hlási „Ontológia obsahuje protichodné údaje"**: v ontológii sú zlúčené individuá
+  (owl:sameAs) alebo diel má viac hodnôt vlastnosti, ktorá má mať jednu (napr. `maFormFaktorDosky`).
+  Typicky vznikne, keď sa uložia odvodené tvrdenia reasonera a vlastnosť ako
+  `podporujeFormFaktorDosky` je nesprávne označená ako Functional. Opravte to v Protégé a ontológiu
+  ukladajte cez **File → Save** (nie Export inferred axioms).
 - **PDF je „nečitateľné"**: súbor je poškodený alebo chránený, nahraďte ho.
 
 ## Obhajoba

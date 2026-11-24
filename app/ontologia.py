@@ -1,13 +1,4 @@
-"""Ontológia zo Zadania 1 (.owl, RDF/XML z Protégé / WebProtégé).
 
-Z jedného súboru sa vytvorí:
-  - graf()     graf trojíc pre SPARQL dopyty konfigurátora,
-  - pravidla() SWRL pravidlá ako text (R01 → "… → …"),
-  - uryvky()   textové úryvky pre RAG: každá trieda, vlastnosť, individuum a pravidlo.
-
-WebProtégé dáva entitám náhodné IRI (http://webprotege.stanford.edu/R…), preto
-dostane každá entita nové IRI podľa svojho rdfs:label, napr. pc:Ryzen5_5600X.
-"""
 from collections import defaultdict
 
 import rdflib

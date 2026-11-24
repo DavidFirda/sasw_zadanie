@@ -1,5 +1,4 @@
-"""Webový server: katalóg konfigurátora z ontológie (SPARQL) a poradca
-(RAG nad PDF, ontológiou zo Zadania 1 a katalógom, model beží lokálne v Ollame)."""
+
 import json
 import logging
 import os
@@ -89,7 +88,7 @@ def otazka(o: Otazka):
             if stav["stav"] != "pripravene":
                 raise RuntimeError("Index ešte nie je pripravený.")
             # pri otázke o zostave hľadáme aj podľa jej dielov, aby sa našli ich parametre
-            najdene = index.hladaj(o.otazka + ("\n" + zostava if zostava else ""))
+            najdene = index.hladaj(o.otazka + ("\n" + zostava if zostava else ""), bez_zostav=bool(zostava))
             yield json.dumps({"typ": "zdroje", "zdroje": najdene}, ensure_ascii=False) + "\n"
             for kus in rag.odpoved(o.otazka, najdene, zostava):
                 yield json.dumps({"typ": "text", "text": kus}, ensure_ascii=False) + "\n"

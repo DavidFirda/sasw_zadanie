@@ -1,11 +1,4 @@
-"""Jadro RAG: načítanie zdrojov, embeddingy, vyhľadávanie a generovanie odpovede.
 
-Zdroje: PDF dokumenty (data/pdf), ontológia zo Zadania 1 (data/ontologia/*.owl)
-a katalóg konfigurátora (komponenty, pravidlá, hotové zostavy).
-Všetko beží lokálne cez Ollamu:
-  - EMBED_MODEL vytvára vektory úryvkov aj otázky,
-  - LLM_MODEL píše odpoveď len z nájdených úryvkov.
-"""
 import hashlib
 import json
 import os
@@ -31,6 +24,8 @@ SYSTEM = """Si poradca PC konfigurátora. Odpovedáš po slovensky.
 Používaj iba informácie z priloženého kontextu (úryvky z PDF dokumentov, z ontológie a z katalógu konfigurátora
 a prípadne popis zostavy, ktorú má používateľ otvorenú v konfigurátore).
 Nie všetky úryvky musia súvisieť s otázkou, použi len tie, ktoré sa jej týkajú.
+Ak je priložená ZOSTAVA POUŽÍVATEĽA, otázka sa týka práve nej: diely, parametre a výsledky kontrol ber
+z nej. Hotové zostavy z úryvkov sú iné zostavy, nezamieňaj ich s ňou.
 Ak v kontexte odpoveď nie je, povedz to priamo a nič si nevymýšľaj.
 Za každé tvrdenie daj odkaz na úryvok v hranatých zátvorkách, napríklad [2].
 Odpovedaj stručne a vecne."""
@@ -71,12 +66,14 @@ def nacitaj_zdroje():
     for owl in sorted((DATA / "ontologia").glob("*.owl")):
         cast = Ontologia(owl).uryvky()
         for u in cast:
-            uryvky.append({"druh": "ontologia", "zdroj": owl.name, "miesto": f"{u['typ']} {u['nazov']}", "text": u["text"]})
+            je_zostava = u["typ"] == "Individuum" and bool(re.search(r"^Typ:.*\b(Zostava|TestovaciaZostava)\b", u["text"], re.M))
+            uryvky.append({"druh": "ontologia", "zdroj": owl.name, "miesto": f"{u['typ']} {u['nazov']}", "text": u["text"], "zostava": je_zostava})
         zdroje.append({"nazov": owl.name, "druh": "ontologia", "uryvky": len(cast)})
 
     katalog = uryvky_katalogu()
     for u in katalog:
-        uryvky.append({"druh": "katalog", "zdroj": "Katalóg konfigurátora", "miesto": u["nazov"], "text": u["text"]})
+        uryvky.append({"druh": "katalog", "zdroj": "Katalóg konfigurátora", "miesto": u["nazov"], "text": u["text"],
+                       "zostava": u["text"].startswith("Hotová zostava")})
     zdroje.append({"nazov": "Katalóg konfigurátora", "druh": "katalog", "uryvky": len(katalog)})
     return uryvky, zdroje
 
@@ -129,14 +126,15 @@ class Index:
             np.save(subor, vektory)
         self.uryvky, self.zdroje, self.vektory = uryvky, zdroje, vektory
 
-    def hladaj(self, otazka, k=TOP_K):
+    def hladaj(self, otazka, k=TOP_K, bez_zostav=False):
         """k najpodobnejších úryvkov. Ak sú v indexe PDF, PDF_K z nich je vždy z PDF
         (tie najpodobnejšie), aby sa manuály dostali do kontextu aj vtedy, keď
-        podobnosťou vyhrávajú krátke úryvky z ontológie. Model sám posúdi, či sa hodia."""
+        podobnosťou vyhrávajú krátke úryvky z ontológie. Model sám posúdi, či sa hodia.
+        bez_zostav: pri otázke na zostavu používateľa vynechá úryvky o iných zostavách."""
         if not self.uryvky:
             return []
         skore = self.vektory @ embed([otazka])[0]
-        poradie = [int(i) for i in np.argsort(-skore)]
+        poradie = [int(i) for i in np.argsort(-skore) if not (bez_zostav and self.uryvky[i].get("zostava"))]
         pdf = [i for i in poradie if self.uryvky[i]["druh"] == "pdf"][:PDF_K]
         ostatne = [i for i in poradie if i not in pdf][:k - len(pdf)]
         vyber = sorted(pdf + ostatne, key=lambda i: -skore[i])
@@ -151,10 +149,9 @@ def odpoved(otazka, najdene, zostava=""):
     kontext = "\n\n".join(
         f"[{i}] ({DRUH[u['druh']]}: {u['zdroj']}, {u['miesto']})\n{u['text']}"
         for i, u in enumerate(najdene, 1))
-    if zostava:
-        kontext += f"\n\n{zostava}"
+    uvod = f"{zostava}\n\n" if zostava else ""   # zostava používateľa ide na začiatok, aby mala prednosť
     spravy = [{"role": "system", "content": SYSTEM},
-              {"role": "user", "content": f"Kontext:\n{kontext}\n\nOtázka: {otazka}"}]
+              {"role": "user", "content": f"{uvod}Úryvky zo zdrojov:\n{kontext}\n\nOtázka: {otazka}"}]
     with httpx.stream("POST", f"{OLLAMA}/api/chat", timeout=600,
                       json={"model": LLM_MODEL, "messages": spravy, "stream": True,
                             "options": {"temperature": 0.2}}) as r:

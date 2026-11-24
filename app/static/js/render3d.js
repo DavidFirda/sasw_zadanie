@@ -1,10 +1,6 @@
 
 "use strict";
-/* ============================================================
-   3D VIZUALIZÉR (three.js r128) – modely sa generujú z rozmerov
-   v ontológii. Súradnice v mm: x = zadok→predok, y = zem→hore,
-   z = zadná bočnica→sklo.
-   ============================================================ */
+
 const V3 = (function(){
   const host=document.getElementById("host3d");
   const glOk=(()=>{ try{ const c=document.createElement("canvas"); return !!(c.getContext("webgl2")||c.getContext("webgl")); }catch(e){ return false; } })();
