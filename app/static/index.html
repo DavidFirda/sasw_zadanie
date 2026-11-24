@@ -1,61 +1,28 @@
 <!doctype html>
 <html lang="sk">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Poradca PC konfigurátora</title>
-  <link rel="stylesheet" href="app.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hotové zostavy – PC konfigurátor</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/app.css">
 </head>
-<body>
-  <header class="doska">
-    <svg class="spoje" viewBox="0 0 420 200" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
-      <path d="M0 40 H140 L180 80 H300 L330 50 H420" />
-      <path d="M60 150 H200 L230 120 H420" />
-      <path d="M180 80 V200" />
-      <circle cx="180" cy="80" r="5" /><circle cx="230" cy="120" r="5" /><circle cx="330" cy="50" r="5" /><circle cx="60" cy="150" r="5" />
-    </svg>
-    <div class="doska-obsah">
-      <h1>Poradca PC konfigurátora</h1>
-      <p class="podnadpis">Odpovedá z vašich PDF dokumentov a z ontológie. Beží lokálne cez Ollamu.</p>
-      <ul class="sito" id="sito">
-        <li><span>U1</span><b id="llm">…</b></li>
-        <li><span>U2</span><b id="embed">…</b></li>
-        <li><span>J1</span><b id="stav">Načítavam</b></li>
-      </ul>
+<body data-strana="zostavy">
+<main class="obal">
+  <div class="uvod">
+    <div>
+      <h1>Hotové zostavy</h1>
+      <p>Zostavy z ontológie, všetky prešli kontrolou kompatibility. Každú môžete otvoriť v konfigurátore alebo sa na ňu opýtať poradcu.</p>
     </div>
-  </header>
-
-  <div class="rozlozenie">
-    <aside class="zdroje">
-      <details open id="zdroje-panel">
-        <summary>Čo poradca pozná</summary>
-        <div id="zdroje-zoznam"><p class="tichy">Index sa ešte vytvára.</p></div>
-        <button type="button" class="tlacidlo-druhe" id="reindex">Načítať zdroje znova</button>
-        <p class="tichy male">PDF pridáte do priečinka <code>data/pdf</code>, potom kliknite na tlačidlo vyššie.</p>
-      </details>
-    </aside>
-
-    <main class="chat">
-      <div id="konverzacia" aria-live="polite">
-        <section class="prazdne" id="prazdne">
-          <h2>Opýtajte sa na komponenty, kompatibilitu alebo pravidlá</h2>
-          <div class="priklady">
-            <button type="button">Aký socket má Ryzen 5 5600X a ktoré dosky ho podporujú?</button>
-            <button type="button">Ktoré pravidlo zistí, že procesor nepasuje na základnú dosku?</button>
-            <button type="button">Čo musí spĺňať herná zostava?</button>
-            <button type="button">Ako sa montuje chladič Noctua NH-D15 na socket AM5?</button>
-          </div>
-        </section>
-      </div>
-
-      <form id="formular" class="vstup">
-        <label for="otazka" class="skryte">Otázka</label>
-        <textarea id="otazka" rows="1" placeholder="Napíšte otázku…" required></textarea>
-        <button type="submit" id="poslat">Opýtať sa</button>
-      </form>
-    </main>
   </div>
-
-  <script src="app.js"></script>
+  <div class="filtre-riadok">
+    <div class="prepinac" role="group" aria-label="Cenová kategória" id="tierPrep"></div>
+    <label class="prepinac-maly">Zoradiť <select id="zoradit"><option value="asc">od najlacnejšej</option><option value="desc">od najdrahšej</option></select></label>
+  </div>
+  <div class="zostavy" id="zoznam"></div>
+</main>
+<script src="js/core.js"></script>
+<script src="js/render2d.js"></script>
+<script src="js/zostavy.js"></script>
 </body>
 </html>

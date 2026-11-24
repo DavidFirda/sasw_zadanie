@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poradca – PC konfigurátor</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body data-strana="poradca">
+<main class="obal">
+  <div class="uvod"><div>
+    <h1>Poradca</h1>
+    <p>Odpovedá len z PDF dokumentov, ontológie zo Zadania 1 a katalógu konfigurátora. Pri každej odpovedi ukáže úryvky, z ktorých vychádzal.</p>
+  </div></div>
+  <div class="poradca">
+    <aside class="zdroje-panel" aria-label="Zdroje poradcu">
+      <h2>Čo poradca pozná</h2>
+      <ul class="modely" id="modely"></ul>
+      <div id="zdroje"><p class="jemny maly">Načítavam stav…</p></div>
+      <button class="btn btn-2 btn-s" type="button" id="reindex">Načítať zdroje znova</button>
+      <p class="maly jemny">PDF pridáte do priečinka <code>data/pdf</code>, potom kliknite na tlačidlo vyššie.</p>
+    </aside>
+    <section class="chat" aria-label="Rozhovor s poradcom">
+      <div id="kontext"></div>
+      <div class="konverzacia" id="konverzacia" aria-live="polite">
+        <div id="prazdne">
+          <div class="navrhy" id="navrhy">
+            <button type="button">Aký socket má Ryzen 5 5600X a ktoré dosky ho podporujú?</button>
+            <button type="button">Ktoré pravidlo zistí, že procesor nepasuje na základnú dosku?</button>
+            <button type="button">Aký zdroj potrebujem ku grafike RTX 5070?</button>
+            <button type="button">Ako sa montuje chladič Noctua NH-D15 na socket AM5?</button>
+          </div>
+        </div>
+      </div>
+      <form id="formular" class="vstup">
+        <label for="otazka" class="sr">Otázka</label>
+        <textarea id="otazka" rows="1" placeholder="Napíšte otázku…" required></textarea>
+        <button class="btn btn-1" type="submit" id="poslat">Opýtať sa</button>
+      </form>
+    </section>
+  </div>
+</main>
+<script src="js/core.js"></script>
+<script src="js/poradca.js"></script>
+</body>
+</html>

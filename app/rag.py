@@ -1,5 +1,7 @@
 """Jadro RAG: načítanie zdrojov, embeddingy, vyhľadávanie a generovanie odpovede.
 
+Zdroje: PDF dokumenty (data/pdf), ontológia zo Zadania 1 (data/ontologia/*.owx)
+a katalóg konfigurátora (komponenty, pravidlá, hotové zostavy).
 Všetko beží lokálne cez Ollamu:
   - EMBED_MODEL vytvára vektory úryvkov aj otázky,
   - LLM_MODEL píše odpoveď len z nájdených úryvkov.
@@ -14,6 +16,7 @@ import httpx
 import numpy as np
 from pypdf import PdfReader
 
+from katalog_text import uryvky_katalogu
 from ontologia import Ontologia
 
 OLLAMA = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
@@ -23,8 +26,9 @@ DATA = Path(os.getenv("DATA_DIR", Path(__file__).resolve().parent.parent / "data
 TOP_K = int(os.getenv("TOP_K", "6"))
 CHUNK, OVERLAP = 1000, 200          # znaky na úryvok z PDF, prekryv
 
-SYSTEM = """Si poradca k PC konfigurátoru. Odpovedáš po slovensky.
-Používaj iba informácie z priloženého kontextu (úryvky z PDF dokumentov a z ontológie).
+SYSTEM = """Si poradca PC konfigurátora. Odpovedáš po slovensky.
+Používaj iba informácie z priloženého kontextu (úryvky z PDF dokumentov, z ontológie a z katalógu konfigurátora
+a prípadne popis zostavy, ktorú má používateľ otvorenú v konfigurátore).
 Ak v kontexte odpoveď nie je, povedz to priamo a nič si nevymýšľaj.
 Za každé tvrdenie daj odkaz na úryvok v hranatých zátvorkách, napríklad [2].
 Odpovedaj stručne a vecne."""
@@ -67,6 +71,11 @@ def nacitaj_zdroje():
         for u in cast:
             uryvky.append({"druh": "ontologia", "zdroj": owx.name, "miesto": f"{u['typ']} {u['nazov']}", "text": u["text"]})
         zdroje.append({"nazov": owx.name, "druh": "ontologia", "uryvky": len(cast)})
+
+    katalog = uryvky_katalogu()
+    for u in katalog:
+        uryvky.append({"druh": "katalog", "zdroj": "Katalóg konfigurátora", "miesto": u["nazov"], "text": u["text"]})
+    zdroje.append({"nazov": "Katalóg konfigurátora", "druh": "katalog", "uryvky": len(katalog)})
     return uryvky, zdroje
 
 
@@ -126,11 +135,16 @@ class Index:
         return [dict(self.uryvky[i], skore=round(float(skore[i]), 3)) for i in najlepsie]
 
 
-def odpoved(otazka, najdene):
+DRUH = {"pdf": "PDF", "ontologia": "Ontológia", "katalog": "Katalóg"}
+
+
+def odpoved(otazka, najdene, zostava=""):
     """Generátor kúskov textu odpovede (stream z Ollamy)."""
     kontext = "\n\n".join(
-        f"[{i}] ({'PDF' if u['druh'] == 'pdf' else 'Ontológia'}: {u['zdroj']}, {u['miesto']})\n{u['text']}"
+        f"[{i}] ({DRUH[u['druh']]}: {u['zdroj']}, {u['miesto']})\n{u['text']}"
         for i, u in enumerate(najdene, 1))
+    if zostava:
+        kontext += f"\n\n{zostava}"
     spravy = [{"role": "system", "content": SYSTEM},
               {"role": "user", "content": f"Kontext:\n{kontext}\n\nOtázka: {otazka}"}]
     with httpx.stream("POST", f"{OLLAMA}/api/chat", timeout=600,

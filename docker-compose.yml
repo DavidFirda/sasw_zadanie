@@ -1,28 +1,25 @@
-# RAG nad PDF dokumentmi a ontológiou PC konfigurátora
-# Spustenie: docker compose up  ->  http://localhost:8000
-# Hotový image z GitHubu: nastavte APP_IMAGE v súbore .env a spustite docker compose pull
-services:
-  ollama:
-    image: ollama/ollama:latest
-    volumes:
-      - ollama:/root/.ollama          # stiahnuté modely ostanú aj po reštarte
 
+services:
   app:
-    image: ${APP_IMAGE:-pc-rag:local}
-    build: ./app                      # ak image nie je stiahnutý, postaví sa lokálne
+    image: ${APP_IMAGE:-pc-konfigurator:local}
+    build: ./app                      
     ports:
       - "8000:8000"
     environment:
-      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
       LLM_MODEL: ${LLM_MODEL:-gemma3:4b}
       EMBED_MODEL: ${EMBED_MODEL:-bge-m3}
       DATA_DIR: /data
     extra_hosts:
-      - "host.docker.internal:host-gateway"   # pre Ollamu nainštalovanú priamo v počítači
+      - "host.docker.internal:host-gateway"
     volumes:
-      - ./data:/data                  # sem patria PDF a ontológia
-    depends_on:
-      - ollama
+      - ./data:/data                 
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    volumes:
+      - ollama:/root/.ollama
 
 volumes:
   ollama:
