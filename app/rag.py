@@ -1,0 +1,144 @@
+"""Jadro RAG: načítanie zdrojov, embeddingy, vyhľadávanie a generovanie odpovede.
+
+Všetko beží lokálne cez Ollamu:
+  - EMBED_MODEL vytvára vektory úryvkov aj otázky,
+  - LLM_MODEL píše odpoveď len z nájdených úryvkov.
+"""
+import hashlib
+import json
+import os
+import re
+from pathlib import Path
+
+import httpx
+import numpy as np
+from pypdf import PdfReader
+
+from ontologia import Ontologia
+
+OLLAMA = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
+LLM_MODEL = os.getenv("LLM_MODEL", "gemma3:4b")
+EMBED_MODEL = os.getenv("EMBED_MODEL", "bge-m3")
+DATA = Path(os.getenv("DATA_DIR", Path(__file__).resolve().parent.parent / "data"))
+TOP_K = int(os.getenv("TOP_K", "6"))
+CHUNK, OVERLAP = 1000, 200          # znaky na úryvok z PDF, prekryv
+
+SYSTEM = """Si poradca k PC konfigurátoru. Odpovedáš po slovensky.
+Používaj iba informácie z priloženého kontextu (úryvky z PDF dokumentov a z ontológie).
+Ak v kontexte odpoveď nie je, povedz to priamo a nič si nevymýšľaj.
+Za každé tvrdenie daj odkaz na úryvok v hranatých zátvorkách, napríklad [2].
+Odpovedaj stručne a vecne."""
+
+
+# ---------------- načítanie zdrojov ----------------
+def rozdel(text):
+    """Rozdelí text stránky na úryvky s prekryvom, delí sa na hraniciach slov."""
+    text = re.sub(r"\s+", " ", text).strip()
+    out, start = [], 0
+    while start < len(text):
+        end = min(start + CHUNK, len(text))
+        if end < len(text):
+            space = text.rfind(" ", start + CHUNK // 2, end)
+            end = space if space > 0 else end
+        out.append(text[start:end].strip())
+        if end >= len(text):
+            break
+        start = max(end - OVERLAP, start + 1)
+    return [u for u in out if len(u) > 40]
+
+
+def nacitaj_zdroje():
+    uryvky, zdroje = [], []
+    for pdf in sorted((DATA / "pdf").glob("*.pdf")):
+        try:
+            strany = PdfReader(pdf).pages
+        except Exception as e:  # poškodené PDF preskočíme, ale ukážeme ho
+            zdroje.append({"nazov": pdf.name, "druh": "pdf", "uryvky": 0, "chyba": str(e)})
+            continue
+        pocet = 0
+        for i, strana in enumerate(strany, 1):
+            for text in rozdel(strana.extract_text() or ""):
+                uryvky.append({"druh": "pdf", "zdroj": pdf.name, "miesto": f"str. {i}", "text": text})
+                pocet += 1
+        zdroje.append({"nazov": pdf.name, "druh": "pdf", "strany": len(strany), "uryvky": pocet})
+
+    for owx in sorted((DATA / "ontologia").glob("*.owx")):
+        cast = Ontologia(owx).uryvky()
+        for u in cast:
+            uryvky.append({"druh": "ontologia", "zdroj": owx.name, "miesto": f"{u['typ']} {u['nazov']}", "text": u["text"]})
+        zdroje.append({"nazov": owx.name, "druh": "ontologia", "uryvky": len(cast)})
+    return uryvky, zdroje
+
+
+# ---------------- Ollama ----------------
+def embed(texty):
+    vektory = []
+    with httpx.Client(timeout=600) as c:
+        for i in range(0, len(texty), 32):
+            r = c.post(f"{OLLAMA}/api/embed", json={"model": EMBED_MODEL, "input": texty[i:i + 32]})
+            r.raise_for_status()
+            vektory += r.json()["embeddings"]
+    v = np.array(vektory, dtype=np.float32)
+    return v / np.linalg.norm(v, axis=1, keepdims=True)
+
+
+def zabezpec_modely(stav):
+    """Ak model v Ollame chýba, stiahne ho (prvé spustenie)."""
+    with httpx.Client(timeout=None) as c:
+        mame = {m["name"] for m in c.get(f"{OLLAMA}/api/tags").json().get("models", [])}
+        for m in (EMBED_MODEL, LLM_MODEL):
+            if m not in mame and f"{m}:latest" not in mame:
+                stav(f"Sťahujem model {m} (len pri prvom spustení)")
+                c.post(f"{OLLAMA}/api/pull", json={"model": m, "stream": False}).raise_for_status()
+
+
+# ---------------- index ----------------
+class Index:
+    def __init__(self):
+        self.uryvky, self.zdroje, self.vektory = [], [], None
+
+    def postav(self, stav=lambda s: None):
+        stav("Kontrolujem modely v Ollame")
+        zabezpec_modely(stav)
+        stav("Čítam PDF a ontológiu")
+        uryvky, zdroje = nacitaj_zdroje()
+
+        # vektory sa ukladajú do data/.index, aby sa pri ďalšom štarte nepočítali znova
+        podpis = hashlib.sha1(json.dumps([EMBED_MODEL, [u["text"] for u in uryvky]]).encode()).hexdigest()
+        cache = DATA / ".index"
+        subor = cache / f"{podpis}.npy"
+        if subor.exists():
+            vektory = np.load(subor)
+        else:
+            stav(f"Počítam embeddingy pre {len(uryvky)} úryvkov")
+            vektory = embed([u["text"] for u in uryvky]) if uryvky else np.zeros((0, 1), np.float32)
+            cache.mkdir(exist_ok=True)
+            for stary in cache.glob("*.npy"):
+                stary.unlink()
+            np.save(subor, vektory)
+        self.uryvky, self.zdroje, self.vektory = uryvky, zdroje, vektory
+
+    def hladaj(self, otazka, k=TOP_K):
+        if not self.uryvky:
+            return []
+        skore = self.vektory @ embed([otazka])[0]
+        najlepsie = np.argsort(-skore)[:k]
+        return [dict(self.uryvky[i], skore=round(float(skore[i]), 3)) for i in najlepsie]
+
+
+def odpoved(otazka, najdene):
+    """Generátor kúskov textu odpovede (stream z Ollamy)."""
+    kontext = "\n\n".join(
+        f"[{i}] ({'PDF' if u['druh'] == 'pdf' else 'Ontológia'}: {u['zdroj']}, {u['miesto']})\n{u['text']}"
+        for i, u in enumerate(najdene, 1))
+    spravy = [{"role": "system", "content": SYSTEM},
+              {"role": "user", "content": f"Kontext:\n{kontext}\n\nOtázka: {otazka}"}]
+    with httpx.stream("POST", f"{OLLAMA}/api/chat", timeout=600,
+                      json={"model": LLM_MODEL, "messages": spravy, "stream": True,
+                            "options": {"temperature": 0.2}}) as r:
+        r.raise_for_status()
+        for riadok in r.iter_lines():
+            if riadok:
+                cast = json.loads(riadok)
+                if cast.get("message", {}).get("content"):
+                    yield cast["message"]["content"]
