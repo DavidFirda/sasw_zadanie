@@ -86,12 +86,8 @@ function platnaZostava(b){ return b && KAT.every(k => k.multi ? Array.isArray(b[
 function nazovZostavy(b){ const p = PRESETS.find(x => JSON.stringify(normB(x.b)) === JSON.stringify(normB(b))); return p ? p.nazov : null; }
 function normB(b){ const o = {}; KAT.forEach(k => { o[k.id] = k.multi ? [...(b[k.id]||[])].sort() : (b[k.id] ?? null); }); return o; }
 
-/* Otvorí poradcu s otázkou na konkrétnu zostavu. */
-function opytajSaNaZostavu(b, nazov){
-  Uloz.set("poradca", {b, nazov});
-  const otazka = bezChyby(b) ? "Je táto zostava v poriadku a na čo sa hodí?" : "Prečo táto zostava nie je v poriadku a ako ju opraviť?";
-  location.href = `poradca.html?zostava=1&q=${encodeURIComponent(otazka)}${API_BASE && location.search.includes("api=") ? "&api=" + encodeURIComponent(API_BASE) : ""}`;
-}
+/* Otvorí bočný panel poradcu s otázkou na konkrétnu zostavu (chat.js). */
+function opytajSaNaZostavu(b, nazov){ Panel.otvor(b, nazov); }
 
 /* ============================================================
    HLAVIČKA, PÄTA, STAV SERVERA

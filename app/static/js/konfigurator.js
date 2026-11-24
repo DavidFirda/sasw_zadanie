@@ -18,6 +18,7 @@ spusti(() => {
   if(!V3.ok){ rezim = "2d"; document.querySelector('[data-mode="3d"]').disabled = true; }
 
   window.klikNaDiel = cat => zvolKategoriu(cat, true);   // volá 3D náhľad
+  window.aktualnaZostava = () => B;                       // bočný poradca sa pýta na aktuálnu zostavu
   $("svgHost").addEventListener("click", e => { const g = e.target.closest(".part"); if(g) zvolKategoriu(g.dataset.cat, true); });
   $("svgHost").addEventListener("keydown", e => { const g = e.target.closest(".part"); if(g && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); zvolKategoriu(g.dataset.cat, true); } });
   $("kategorie").onclick = e => { const t = e.target.closest("button"); if(t) zvolKategoriu(t.dataset.cat); };
@@ -34,7 +35,7 @@ spusti(() => {
   kresli();
 });
 
-function nastav(nb, sprava){ B = nb; Uloz.set("zostava", B); kresli(); if(sprava) toast(sprava); }
+function nastav(nb, sprava){ B = nb; Uloz.set("zostava", B); kresli(); Panel.popis(); if(sprava) toast(sprava); }
 function zvolKategoriu(cat, posun){
   activeCat = cat; kresli();
   if(posun && innerWidth < 1100) $("kategorie").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start"});

@@ -24,11 +24,13 @@ LLM_MODEL = os.getenv("LLM_MODEL", "gemma3:4b")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "bge-m3")
 DATA = Path(os.getenv("DATA_DIR", Path(__file__).resolve().parent.parent / "data"))
 TOP_K = int(os.getenv("TOP_K", "6"))
+PDF_K = int(os.getenv("PDF_K", "2"))   # koľko z TOP_K úryvkov má byť vždy z PDF (ak nejaké sú)
 CHUNK, OVERLAP = 1000, 200          # znaky na úryvok z PDF, prekryv
 
 SYSTEM = """Si poradca PC konfigurátora. Odpovedáš po slovensky.
 Používaj iba informácie z priloženého kontextu (úryvky z PDF dokumentov, z ontológie a z katalógu konfigurátora
 a prípadne popis zostavy, ktorú má používateľ otvorenú v konfigurátore).
+Nie všetky úryvky musia súvisieť s otázkou, použi len tie, ktoré sa jej týkajú.
 Ak v kontexte odpoveď nie je, povedz to priamo a nič si nevymýšľaj.
 Za každé tvrdenie daj odkaz na úryvok v hranatých zátvorkách, napríklad [2].
 Odpovedaj stručne a vecne."""
@@ -128,11 +130,17 @@ class Index:
         self.uryvky, self.zdroje, self.vektory = uryvky, zdroje, vektory
 
     def hladaj(self, otazka, k=TOP_K):
+        """k najpodobnejších úryvkov. Ak sú v indexe PDF, PDF_K z nich je vždy z PDF
+        (tie najpodobnejšie), aby sa manuály dostali do kontextu aj vtedy, keď
+        podobnosťou vyhrávajú krátke úryvky z ontológie. Model sám posúdi, či sa hodia."""
         if not self.uryvky:
             return []
         skore = self.vektory @ embed([otazka])[0]
-        najlepsie = np.argsort(-skore)[:k]
-        return [dict(self.uryvky[i], skore=round(float(skore[i]), 3)) for i in najlepsie]
+        poradie = [int(i) for i in np.argsort(-skore)]
+        pdf = [i for i in poradie if self.uryvky[i]["druh"] == "pdf"][:PDF_K]
+        ostatne = [i for i in poradie if i not in pdf][:k - len(pdf)]
+        vyber = sorted(pdf + ostatne, key=lambda i: -skore[i])
+        return [dict(self.uryvky[i], skore=round(float(skore[i]), 3)) for i in vyber]
 
 
 DRUH = {"pdf": "PDF", "ontologia": "Ontológia", "katalog": "Katalóg"}

@@ -267,8 +267,10 @@ button.pravidlo:hover { border-color: var(--accent); color: var(--accent); }
 .konverzacia { flex: 1; }
 .kontext-zostavy { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-s); padding: 10px 14px; font-size: 14.5px; margin-bottom: 8px; }
 .kontext-zostavy b { display: block; margin-bottom: 2px; }
-.navrhy { display: grid; gap: 8px; }
-.navrhy button { text-align: left; padding: 11px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-s); }
+.skupina-otazok { margin-bottom: 18px; }
+.skupina-otazok h3 { font-size: 16px; font-stretch: 100%; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+.navrhy { display: flex; flex-wrap: wrap; gap: 8px; }
+.navrhy button { text-align: left; padding: 9px 13px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-s); font-size: 15px; }
 .navrhy button:hover { border-color: var(--accent); }
 .otazka-bublina { margin: 26px 0 10px; font-weight: 600; font-size: 18px; line-height: 1.35; padding-left: 12px; border-left: 3px solid var(--accent); }
 .odpoved p { margin: 0 0 .75rem; }
@@ -289,6 +291,22 @@ button.pravidlo:hover { border-color: var(--accent); color: var(--accent); }
 .vstup { position: sticky; bottom: 0; display: flex; gap: 8px; align-items: flex-end; padding: 16px 0 20px; background: linear-gradient(rgba(242, 244, 241, 0), var(--bg) 30%); }
 .vstup textarea { flex: 1; resize: none; max-height: 10rem; padding: 11px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-s); }
 .vstup textarea:focus { border-color: var(--accent); outline: none; }
+
+/* ---------- bočný panel poradcu ---------- */
+.bocny-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100%); z-index: 60; background: var(--bg); border-left: 1px solid var(--line); box-shadow: -12px 0 32px rgba(28, 36, 33, .12); display: flex; flex-direction: column; transform: translateX(104%); transition: transform .25s ease; }
+.bocny-panel.otvoreny { transform: none; }
+.panel-hlav { display: flex; justify-content: space-between; align-items: start; gap: 12px; padding: 16px 20px 12px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.panel-hlav h2 { font-size: 26px; }
+.panel-hlav p { margin: 4px 0 0; }
+.zavriet { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; width: 38px; height: 38px; font-size: 20px; line-height: 1; flex: none; }
+.bocny-panel .konverzacia { flex: 1; overflow: auto; padding: 0 20px 12px; font-size: 15px; }
+.bocny-panel .otazka-bublina { font-size: 16px; margin-top: 18px; }
+.rychle { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 20px 0; }
+.rychle button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-size: 13.5px; text-align: left; }
+.rychle button:hover { border-color: var(--accent); }
+.bocny-panel .vstup { position: static; padding: 10px 20px 16px; background: none; }
+/* na širokej obrazovke panel stránku odsunie, aby sa dalo ďalej meniť diely */
+@media (min-width: 1200px) { body.panel-otvoreny { padding-right: 460px; } body.panel-otvoreny .suhrn { right: 460px; } body.panel-otvoreny .bocny-panel { box-shadow: none; } }
 
 /* ---------- dialóg, toast ---------- */
 dialog { border: 1px solid var(--line); border-radius: var(--r); padding: 0; width: min(560px, 94vw); }

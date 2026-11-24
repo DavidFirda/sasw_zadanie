@@ -81,6 +81,12 @@ Manuály výrobcov do verejného repozitára radšej nedávajte (autorské práv
 | 8 | Samsung SSD 870 EVO – datasheet | [samsung.com](https://download.semiconductor.samsung.com/resources/data-sheet/Samsung_SSD_870_EVO_Data_Sheet_Rev1.1_230509_10129500053000.pdf) |
 | 9 | Crucial P3 Plus – produktový list | [crucial.com](https://crucial.com/content/dam/crucial/ssd-products/p3-plus/flyers/b2c/crucial-p3plus-productflyer-consumer.pdf) |
 | 10 | Cooler Master NR200P – produktový list skrinky | [igorslab.de](https://www.igorslab.de/wp-content/uploads/2022/02/Product-Sheet-MasterBox-NR200P-Color-Variants.pdf) |
+| 11 | ASUS ROG STRIX B650E-I – príručka k doske | [manuals.plus](https://manuals.plus/asin/B0BHHVC3BS.pdf) |
+| 12 | Corsair 4000D Airflow – návod ku skrinke | [manuals.plus](https://manuals.plus/asin/B08C74694Z.pdf) |
+| 13 | Thermalright Peerless Assassin 120 SE – montáž chladiča | [manuals.plus](https://manuals.plus/asin/B0C5MBLHD2.pdf) |
+
+Všetky dokumenty sa týkajú komponentov, ktoré sú v ontológii. Ak niektorý odkaz nefunguje,
+vyhľadajte názov produktu so slovami „manual pdf".
 
 ## Ako to funguje
 
@@ -109,7 +115,9 @@ ju ako RDF/XML (`.owl`) do `data/ontologia/` a reštartujete server.
    a cenou (`app/katalog_text.py`).
 2. *Embeddingy*: `bge-m3` (viacjazyčný) zmení úryvky na vektory, uložia sa do `data/.index/`.
 3. *Vyhľadanie*: otázka sa zmení na vektor, vyberie sa 6 úryvkov s najvyššou kosínusovou podobnosťou.
-   Pri otázke na zostavu sa hľadá aj podľa jej dielov.
+   Ak sú v indexe PDF, 2 z nich sú vždy najlepšie úryvky z PDF, aby sa manuály dostali do kontextu
+   aj pri otázkach, kde podobnosťou vyhrávajú krátke úryvky z ontológie. Pri otázke na zostavu sa
+   hľadá aj podľa jej dielov.
 4. *Generovanie*: `gemma3:4b` dostane očíslované úryvky, a ak sa pýtate z konfigurátora alebo
    z hotových zostáv, aj danú zostavu s výsledkami kontrol. Odpovedá po slovensky len z nich
    a cituje ich ako `[1]`.
@@ -138,7 +146,8 @@ app/
   rag.py           poradca: zdroje, embeddingy, vyhľadávanie, odpoveď
   ontologia.py     ontológia zo Zadania 1 (.owl): graf trojíc, SWRL pravidlá, úryvky textu
   katalog_text.py  katalóg a aktuálna zostava ako text pre poradcu
-  static/          web: index.html (hotové zostavy), konfigurator.html, komponenty.html, poradca.html
+  static/          web: index.html (hotové zostavy), konfigurator.html, komponenty.html, poradca.html;
+                   js/chat.js je rozhovor s poradcom (stránka Poradca aj bočný panel)
 data/
   ontologia/       ontológia zo Zadania 1 (jediný zdroj dát konfigurátora aj poradcu)
   vizual.json      vzhľad 3D modelu (štýl skriniek, rozmiestnenie)
@@ -154,6 +163,7 @@ data/
 | `EMBED_MODEL` | `bge-m3` | model na embeddingy |
 | `OLLAMA_URL` | `http://localhost:11434` | adresa Ollamy (v Dockeri `host.docker.internal`) |
 | `TOP_K` | `6` | počet úryvkov v kontexte |
+| `PDF_K` | `2` | koľko z nich je vždy z PDF (0 = len podľa podobnosti) |
 | `CORS_ORIGINS` | `https://[\w-]+\.github\.io` | z ktorých stránok smie web volať server |
 
 ## Riešenie problémov
@@ -173,8 +183,10 @@ data/
    a ukážte stranu manuálu.
 3. **Otázka na ontológiu**: „Ktoré pravidlo zistí, že procesor nepasuje na základnú dosku?"
 4. **RAG v konfigurátore**: vyberte nekompatibilný diel (napr. pamäť DDR4 k doske s DDR5) a
-   kliknite na **Opýtať sa poradcu na zostavu**. Poradca vidí vašu zostavu aj výsledky kontrol.
-5. **Otázka mimo zdrojov**: „Kto vyhral MS v hokeji?" Poradca má povedať, že to v zdrojoch nie je.
+   kliknite na **Opýtať sa poradcu na zostavu**. Na boku sa otvorí poradca, ktorý vidí vašu zostavu
+   aj výsledky kontrol. Diely môžete meniť ďalej a ďalšie otázky sa vzťahujú na aktuálnu zostavu.
+5. **Otázka mimo zdrojov**: na stránke Poradca je skupina „Mimo zdrojov (test)" (hokej, aktuálne
+   ceny, notebook, básnička). Poradca má povedať, že to v zdrojoch nie je.
 
 Časté otázky: *Prečo RAG?* Model sám nepozná vaše PDF ani ontológiu a vymýšľal by si; RAG mu
 dodá presné úryvky a odpoveď sa dá overiť. *Ako sa do RAG dostala ontológia?* Každá entita
