@@ -46,7 +46,7 @@ function renderSVG(b){
   const k=C[b.skrinka]; const L=LAYOUT[b.skrinka]; const bad=new Set(); const chk=checks(b);
   chk.filter(x=>!x.ok).forEach(x=>x.cats.forEach(c=>bad.add(c)));
   const changed=new Set(); if(prevBuild) for(const kk of KAT){ if(JSON.stringify(prevBuild[kk.id])!==JSON.stringify(b[kk.id])) changed.add(kk.id); }
-  const ox=0, oy=469-L.H; const other=b.skrinka==="Fractal_North"?"CoolerMaster_NR200P":"Fractal_North"; const OL=LAYOUT[other];
+  const ox=0, oy=469-L.H; const other=byKat("skrinka").map(x=>x.id).find(id=>id!==b.skrinka&&LAYOUT[id]); const OL=other&&LAYOUT[other];
   let s=`<svg viewBox="-26 -40 504 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Náhľad zostavy v skrinke ${esc(k.nazov)}">
   <defs><linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".10"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/><stop offset=".62" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
   s+=`<line x1="-26" x2="478" y1="469" y2="469" stroke="var(--line)" stroke-width="1"/>`;
@@ -148,7 +148,7 @@ function renderSVG(b){
     s+=partOpen("grafika","žiadna",false,false)+`<rect x="${L.bracketX}" y="${slotY+4}" width="200" height="40" rx="5" fill="none" stroke="var(--muted)" stroke-dasharray="5 4"/><text x="${L.bracketX+100}" y="${slotY+28}" text-anchor="middle" class="lbl">bez grafiky, obraz cez iGPU</text>`+hit(L.bracketX,slotY+4,200,40)+`</g>`;
   }
   s+=`<rect x="${L.interior[0]}" y="${L.interior[1]}" width="${L.interior[2]}" height="${L.interior[3]}" fill="url(#glass)" pointer-events="none"/>`;
-  s+=`</g><g class="ghost" transform="translate(0,${469-OL.H})" pointer-events="none">${drawCaseShell(other,true)}</g></svg>`;
+  s+=`</g>`+(other?`<g class="ghost" transform="translate(0,${469-OL.H})" pointer-events="none">${drawCaseShell(other,true)}</g>`:"")+`</svg>`;
   prevBuild=structuredClone(b);
   return s;
 }

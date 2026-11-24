@@ -297,7 +297,7 @@ const V3 = (function(){
   canvas.addEventListener("pointerleave",()=>{ tip.hidden=true; setHover(null); });
   canvas.addEventListener("wheel",e=>{ e.preventDefault(); zoom(Math.exp(e.deltaY*.0012)); },{passive:false});
   canvas.addEventListener("dblclick",()=>view(0));
-  function fitDist(){ const id=S.caseId||"Fractal_North"; return Math.max(LAYOUT[id].W,LAYOUT[id].H*1.1,C[id].sirka)*2.05*Math.max(1,1.05/(camera.aspect||1.4)); }
+  function fitDist(){ const id=S.caseId||Object.keys(LAYOUT).find(k=>C[k]); return Math.max(LAYOUT[id].W,LAYOUT[id].H*1.1,C[id].sirka)*2.05*Math.max(1,1.05/(camera.aspect||1.4)); }
   function zoom(f){ const base=S.caseId?Math.max(LAYOUT[S.caseId].W,LAYOUT[S.caseId].H):450; S.tDist=Math.max(base*1.05,Math.min(base*5,S.tDist*f)); }
   const ray=new T.Raycaster(), ndc=new T.Vector2();
   function hitAt(e){ const r=canvas.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1); ray.setFromCamera(ndc,camera);

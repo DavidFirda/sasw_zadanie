@@ -1,14 +1,14 @@
 # PC konfigurátor s poradcom (RAG)
 
-Webová aplikácia nad ontológiou PC konfigurátora: **hotové zostavy**, **3D konfigurátor** s kontrolou
-kompatibility, prehľad **komponentov** a **poradca**, ktorý odpovedá metódou RAG len z vlastných
-zdrojov: z ~10 PDF dokumentov (manuály a datasheety), z ontológie zo Zadania 1 a z katalógu
-konfigurátora. Jazykový model aj embeddingy bežia lokálne cez [Ollamu](https://ollama.com).
+Webová aplikácia nad jednou ontológiou, ontológiou PC konfigurátora zo Zadania 1
+(`data/ontologia/pc_konfigurator.owl`, vytvorená vo WebProtégé, SWRL pravidlá doplnené v Protégé): **hotové zostavy**, **3D konfigurátor**
+s kontrolou kompatibility, prehľad **komponentov** a **poradca**, ktorý odpovedá metódou RAG len z
+vlastných zdrojov: z ~10 PDF dokumentov (manuály a datasheety) a z tejto ontológie. Jazykový model aj embeddingy bežia lokálne cez [Ollamu](https://ollama.com).
 
 | Bod zadania 3 | Kde je splnený |
 |---|---|
 | 1. Spojazdniť RAG u seba lokálne | Ollama (`gemma3:4b` na odpovede, `bge-m3` na embeddingy), kód v `app/rag.py` |
-| 2. Pridať ±10 PDF a ontológiu z 1. zadania | `data/pdf/` (PDF), `data/ontologia/pc_konfigurator.owx` (ontológia z WebProtégé) |
+| 2. Pridať ±10 PDF a ontológiu z 1. zadania | `data/pdf/` (PDF), `data/ontologia/pc_konfigurator.owl` (ontológia zo Zadania 1) |
 | 3. Appka / web | web na http://localhost:8000 alebo na GitHub Pages; poradca na stránke **Poradca** a z konfigurátora tlačidlom **Opýtať sa poradcu na zostavu** |
 | 4. Dokumentácia + obhajoba | tento súbor, časť [Obhajoba](#obhajoba) |
 
@@ -85,36 +85,40 @@ Manuály výrobcov do verejného repozitára radšej nedávajte (autorské práv
 ## Ako to funguje
 
 ```
-KONFIGURÁTOR
-  data/katalog/pc_konfigurator.owl ─► rdflib (SPARQL) ─► /api/katalog ─► web: zostavy, 3D konfigurátor, komponenty
-PORADCA (RAG)
-  data/pdf/*.pdf ───────────────┐
-  data/ontologia/*.owx ─────────┼─► úryvky textu ─► bge-m3 ─► vektory (data/.index/)
-  katalóg konfigurátora ────────┘
-  otázka (+ zostava z konfigurátora) ─► bge-m3 ─► 6 najpodobnejších úryvkov ─► gemma3:4b ─► odpoveď s [1]…[6]
+data/ontologia/pc_konfigurator.owl (RDF/XML z Protégé)
+  ├─► graf trojíc (rdflib) ─► SPARQL ─► /api/katalog ─► web: zostavy, 3D konfigurátor, komponenty
+  └─► úryvky textu ─┐
+data/pdf/*.pdf ─────┴─► bge-m3 ─► vektory (data/.index/)
+otázka (+ zostava z konfigurátora) ─► bge-m3 ─► 6 najpodobnejších úryvkov ─► gemma3:4b ─► odpoveď s [1]…[6]
 ```
 
-**Konfigurátor.** Katalóg (52 komponentov, 12 hotových zostáv, pravidlá) sa číta SPARQL dopytmi
-z úplnej ontológie `pc_konfigurator.owl`. Konfigurátor kontroluje kompatibilitu podľa SWRL pravidiel
-R01–R16 (socket, typ RAM, rozmery, výkon zdroja); kliknutím na kód pravidla sa ukáže jeho zápis
-v ontológii. 3D model sa kreslí z rozmerov v ontológii (three.js), vzhľad dopĺňa `vizual.json`.
+**Konfigurátor.** Server pri štarte načíta ontológiu ako graf trojíc (`app/ontologia.py`,
+entity dostanú IRI podľa svojho `rdfs:label`) a katalóg číta SPARQL dopytmi (`app/katalog.py`):
+komponenty sú individuá tried Skrinka, Procesor, ZakladnaDoska, OperacnaPamat, GrafickaKarta,
+SSD_NVMe/SSD_SATA, Zdroj a VzduchovyChladic; hotové zostavy sú individuá triedy Zostava (testovacie
+zostavy sa vynechajú). Kompatibilita sa kontroluje podľa pravidiel R01–R16 (socket, typ RAM, rozmery,
+výkon zdroja); kliknutím na kód pravidla sa ukáže jeho SWRL zápis z ontológie. 3D model sa kreslí
+z rozmerov v ontológii (three.js); `data/vizual.json` dopĺňa len vzhľad (štýl skrinky, rozmiestnenie
+dielov), ktorý do ontológie nepatrí. Nový komponent pridáte do ontológie vo WebProtégé, stiahnete
+ju ako RDF/XML (`.owl`) do `data/ontologia/` a reštartujete server.
 
 **Poradca.**
 1. *Zdroje* (`app/rag.py`): PDF sa delia na úryvky po ~1000 znakov s prekryvom 200 (pamätajú
-   si stranu). Ontológia z WebProtégé (`app/ontologia.py`) sa prečíta zo súboru OWL/XML a každá
-   trieda, vlastnosť, individuum a SWRL pravidlo je jeden odsek textu (226 úryvkov). Katalóg
-   konfigurátora pridá komponenty, pravidlá a hotové zostavy (83 úryvkov, `app/katalog_text.py`).
+   si stranu). Z ontológie je každá trieda, vlastnosť, individuum a SWRL pravidlo jeden odsek
+   textu. Navyše sa z katalógu pridajú komponenty a zostavy s ľudsky čitateľnými parametrami
+   a cenou (`app/katalog_text.py`).
 2. *Embeddingy*: `bge-m3` (viacjazyčný) zmení úryvky na vektory, uložia sa do `data/.index/`.
 3. *Vyhľadanie*: otázka sa zmení na vektor, vyberie sa 6 úryvkov s najvyššou kosínusovou podobnosťou.
    Pri otázke na zostavu sa hľadá aj podľa jej dielov.
 4. *Generovanie*: `gemma3:4b` dostane očíslované úryvky, a ak sa pýtate z konfigurátora alebo
    z hotových zostáv, aj danú zostavu s výsledkami kontrol. Odpovedá po slovensky len z nich
    a cituje ich ako `[1]`.
-5. *Web*: odpoveď prichádza priebežne; kliknutím na číslo sa ukáže presný úryvok (strana PDF,
-   entita ontológie alebo položka katalógu).
+5. *Web*: odpoveď prichádza priebežne; kliknutím na číslo sa ukáže presný úryvok (strana PDF
+   alebo entita ontológie).
 
-Prečo dve ontológie: konfigurátor potrebuje úplný katalóg s rozmermi a cenami (`pc_konfigurator.owl`,
-52 komponentov), poradca indexuje ontológiu, ktorú ste ručne vytvorili vo WebProtégé v Zadaní 1.
+**SWRL pravidlá.** Ontológia obsahuje 23 pravidiel (R01–R16 kompatibilita dielov, Z01–Z07 problémy
+zostavy). Konfigurátor ich zobrazí pri kontrolách a poradca ich má v indexe. WebProtégé pravidlá
+neukladá, preto ontológiu po úpravách ukladajte z desktopového Protégé (**File → Save**, formát RDF/XML).
 
 Príklad úryvku z ontológie:
 ```
@@ -128,16 +132,16 @@ Potom platí: maProblem(?z, Problem_Socket)
 ```
 app/
   main.py          server (FastAPI): /api/katalog, /api/stav, /api/otazka, /api/reindex
-  sparql.py        načítanie katalógovej ontológie do rdflib
-  katalog.py       katalóg zo SPARQL dopytov
+  sparql.py        ontológia ako graf trojíc v rdflib, SPARQL dopyty
+  katalog.py       katalóg konfigurátora zo SPARQL dopytov
   kontrola.py      kontrola kompatibility (pre poradcu)
   rag.py           poradca: zdroje, embeddingy, vyhľadávanie, odpoveď
-  ontologia.py     ontológia zo Zadania 1 (.owx) na úryvky textu
+  ontologia.py     ontológia zo Zadania 1 (.owl): graf trojíc, SWRL pravidlá, úryvky textu
   katalog_text.py  katalóg a aktuálna zostava ako text pre poradcu
   static/          web: index.html (hotové zostavy), konfigurator.html, komponenty.html, poradca.html
 data/
-  katalog/         pc_konfigurator.owl a vizual.json (konfigurátor, 3D)
-  ontologia/       ontológia zo Zadania 1 (poradca)
+  ontologia/       ontológia zo Zadania 1 (jediný zdroj dát konfigurátora aj poradcu)
+  vizual.json      vzhľad 3D modelu (štýl skriniek, rozmiestnenie)
   pdf/             PDF dokumenty (poradca)
 .github/workflows/ GitHub Pages a Docker image
 ```
@@ -164,7 +168,7 @@ data/
 ## Obhajoba
 
 1. **Lokálny beh**: stránka Poradca ukazuje modely, počet úryvkov a všetky zdroje (10 PDF,
-   ontológia, katalóg konfigurátora). Pridajte jedno PDF, kliknite na Načítať zdroje znova a ukážte, že pribudlo.
+   ontológia). Pridajte jedno PDF, kliknite na Načítať zdroje znova a ukážte, že pribudlo.
 2. **Otázka na PDF**: „Ako sa montuje chladič Noctua NH-D15 na socket AM5?" Kliknite na `[1]`
    a ukážte stranu manuálu.
 3. **Otázka na ontológiu**: „Ktoré pravidlo zistí, že procesor nepasuje na základnú dosku?"

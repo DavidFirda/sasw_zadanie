@@ -1,4 +1,4 @@
-"""Katalóg konfigurátora zostavený výhradne SPARQL dopytmi nad ontológiou.
+"""Katalóg konfigurátora zostavený SPARQL dopytmi nad ontológiou zo Zadania 1.
 
 Ontológia obsahuje všetko, čo súvisí s kompatibilitou (parametre, ceny,
 hotové zostavy). Súbor vizual.json dopĺňa iba vzhľad pre 3D model (farebný štýl,
@@ -9,7 +9,7 @@ from collections import defaultdict
 
 from sparql import DATA, store, local
 
-VIZUAL_PATH = DATA / "katalog" / "vizual.json"
+VIZUAL_PATH = DATA / "vizual.json"
 
 KAT = [
     {"id": "skrinka", "nazov": "Skrinka", "trieda": "Skrinka"},
@@ -52,14 +52,8 @@ _cache = None
 
 
 def _rules_from_ontology():
-    """SWRL pravidlá z ontológie (label + text pravidla) pre zobrazenie a RAG."""
-    rows = store.select("""SELECT ?r ?l WHERE { ?r a <http://www.w3.org/2003/11/swrl#Imp> ; rdfs:label ?l . }""")
-    out = {}
-    for r in rows:
-        lab = r["l"]
-        rid = lab.split(" ")[0]
-        out[rid] = lab
-    return out
+    """SWRL pravidlá z ontológie (R01 → text pravidla) pre zobrazenie v konfigurátore."""
+    return store.pravidla
 
 
 def load():
@@ -81,7 +75,7 @@ def load():
     # 3) popisky (výrobcovia a pod.)
     labels = {}
     for r in store.select("SELECT ?x ?l WHERE { ?x rdfs:label ?l . FILTER(lang(?l) = 'sk' || lang(?l) = '') }"):
-        labels[local(r["x"])] = r["l"]
+        labels[local(r["x"])] = r["l"].replace("_", " ")
 
     def one(p, k, default=None):
         v = p.get(k)
@@ -151,7 +145,8 @@ def load():
 
     # 4) pripravené zostavy (bez testovacích)
     rows = store.select("""SELECT ?z ?l ?kat ?ucel ?p ?o WHERE {
-        ?z a :Zostava ; rdfs:label ?l ; :cenovaKategoria ?kat ; :ucelPopis ?ucel .
+        ?z a :Zostava ; :cenovaKategoria ?kat ; :ucelPopis ?ucel .
+        ?z rdfs:label ?lab . OPTIONAL { ?z :nazov ?n } BIND(COALESCE(?n, ?lab) AS ?l)
         FILTER NOT EXISTS { ?z a :TestovaciaZostava }
         ?z ?p ?o . FILTER(?p IN (:maProcesor, :maDosku, :maPamat, :maGrafiku, :maUlozisko, :maZdroj, :maSkrinku, :maChladic)) }""")
     pmap = {"maProcesor": "procesor", "maDosku": "doska", "maPamat": "pamat", "maGrafiku": "grafika",
@@ -159,7 +154,7 @@ def load():
     Z = {}
     for r in rows:
         zid = local(r["z"])
-        z = Z.setdefault(zid, {"id": zid, "nazov": r["l"], "tier": r["kat"], "ucel": r["ucel"],
+        z = Z.setdefault(zid, {"id": zid, "nazov": r["l"].replace("_", " "), "tier": r["kat"], "ucel": r["ucel"],
                                "b": {"grafika": None, "ulozisko": []}})
         k = pmap[local(r["p"])]
         if k == "ulozisko":
@@ -173,7 +168,7 @@ def load():
     presets = sorted(Z.values(), key=lambda z: (tier_order.index(z["tier"]), sum_price(C, z["b"])))
 
     swrl = _rules_from_ontology()
-    rules = {k: {"nazov": v[0], "vysv": v[1], "swrl": swrl.get(k, "rozšírenie webu (uzavretý svet)")} for k, v in PRAVIDLA.items()}
+    rules = {k: {"nazov": v[0], "vysv": v[1], "swrl": swrl.get(k, "rozšírenie webu (uzavretý svet)" if k.startswith("X") else "v ontológii nie je zapísané ako SWRL pravidlo")} for k, v in PRAVIDLA.items()}
 
     _cache = {"kategorie": KAT, "komponenty": C, "zostavy": presets, "pravidla": rules, "tiers": TIERS,
               "layout": viz["layout"], "board": viz["board"],

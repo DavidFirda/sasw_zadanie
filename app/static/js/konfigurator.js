@@ -5,7 +5,7 @@ let B = null, lenKomp = false, rezim = "3d";
 spusti(() => {
   const q = new URLSearchParams(location.search);
   const zPreset = PRESETS.find(p => p.id === q.get("zostava"));
-  const zakladna = PRESETS.find(p => p.id === "Zostava_Herna_AM5") || PRESETS[0];
+  const zakladna = PRESETS[0];
   B = zPreset ? structuredClone(zPreset.b) : Uloz.get("zostava", null);
   if(!platnaZostava(B)) B = structuredClone(zakladna.b);
   const pridat = q.get("pridat");

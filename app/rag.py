@@ -1,6 +1,6 @@
 """Jadro RAG: načítanie zdrojov, embeddingy, vyhľadávanie a generovanie odpovede.
 
-Zdroje: PDF dokumenty (data/pdf), ontológia zo Zadania 1 (data/ontologia/*.owx)
+Zdroje: PDF dokumenty (data/pdf), ontológia zo Zadania 1 (data/ontologia/*.owl)
 a katalóg konfigurátora (komponenty, pravidlá, hotové zostavy).
 Všetko beží lokálne cez Ollamu:
   - EMBED_MODEL vytvára vektory úryvkov aj otázky,
@@ -66,11 +66,11 @@ def nacitaj_zdroje():
                 pocet += 1
         zdroje.append({"nazov": pdf.name, "druh": "pdf", "strany": len(strany), "uryvky": pocet})
 
-    for owx in sorted((DATA / "ontologia").glob("*.owx")):
-        cast = Ontologia(owx).uryvky()
+    for owl in sorted((DATA / "ontologia").glob("*.owl")):
+        cast = Ontologia(owl).uryvky()
         for u in cast:
-            uryvky.append({"druh": "ontologia", "zdroj": owx.name, "miesto": f"{u['typ']} {u['nazov']}", "text": u["text"]})
-        zdroje.append({"nazov": owx.name, "druh": "ontologia", "uryvky": len(cast)})
+            uryvky.append({"druh": "ontologia", "zdroj": owl.name, "miesto": f"{u['typ']} {u['nazov']}", "text": u["text"]})
+        zdroje.append({"nazov": owl.name, "druh": "ontologia", "uryvky": len(cast)})
 
     katalog = uryvky_katalogu()
     for u in katalog:
