@@ -1,4 +1,6 @@
 "use strict";
+/* Rozhovor s poradcom (RAG). Používa ho stránka Poradca aj bočný panel v konfigurátore. Odpoveď prichádza po kúskoch (NDJSON): najprv nájdené úryvky,
+   potom text odpovede s odkazmi [1]…[n]. */
 
 const DRUH = {pdf: "PDF", ontologia: "ontológia", katalog: "konfigurátor"};
 
@@ -68,7 +70,7 @@ function pripojChat(root, zostava = () => null){
 }
 
 /* ============================================================
-   BOČNÝ PANEL (konfigurátor, hotové zostavy)
+   BOČNÝ PANEL V KONFIGURÁTORE
    ============================================================ */
 const Panel = {
   chat: null, b: null, nazov: null,
@@ -89,7 +91,7 @@ const Panel = {
     a.querySelector("#panelRychle").onclick = e => { const b = e.target.closest("button"); if(b) this.chat.opytaj(b.textContent); };
     this.el = a;
   },
-  zostava(){ return typeof window.aktualnaZostava === "function" ? window.aktualnaZostava() : this.b; },
+  zostava(){ return window.aktualnaZostava ? window.aktualnaZostava() : this.b; },
   /* Otvorí panel pre zostavu b a hneď položí úvodnú otázku. */
   otvor(b, nazov){
     if(!this.el) this.vytvor();

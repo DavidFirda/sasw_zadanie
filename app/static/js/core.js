@@ -1,4 +1,5 @@
-
+/* Spoločný kód: načítanie katalógu z API (ontológia cez SPARQL), kontroly
+   kompatibility, hlavička a päta. */
 "use strict";
 let C = {}, PRESETS = [], RULES = {}, TIERS = {}, LAYOUT = {}, BOARD = {}, KAT = [], KATMAP = {};
 let activeCat = "grafika", prevBuild = null;
@@ -7,7 +8,8 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt
 const eur = n => new Intl.NumberFormat("sk-SK", {style:"currency", currency:"EUR", maximumFractionDigits: n % 1 ? 2 : 0}).format(n);
 const $ = id => document.getElementById(id);
 
-
+/* Na GitHub Pages je len web, server s katalógom a poradcom beží u vás na localhoste.
+   Inú adresu servera nastavíte v URL: ?api=http://localhost:9000 */
 const API_BASE = new URLSearchParams(location.search).get("api") ?? (location.hostname.endsWith("github.io") ? "http://localhost:8000" : "");
 async function apiGet(u){ const r = await fetch(API_BASE + u); if(!r.ok) throw new Error(`${u}: ${r.status}`); return r.json(); }
 
@@ -93,16 +95,13 @@ function platnaZostava(b){ return b && KAT.every(k => k.multi ? Array.isArray(b[
 function nazovZostavy(b){ const p = PRESETS.find(x => JSON.stringify(normB(x.b)) === JSON.stringify(normB(b))); return p ? p.nazov : null; }
 function normB(b){ const o = {}; KAT.forEach(k => { o[k.id] = k.multi ? [...(b[k.id]||[])].sort() : (b[k.id] ?? null); }); return o; }
 
-/* Otvorí bočný panel poradcu s otázkou na konkrétnu zostavu (chat.js). */
-function opytajSaNaZostavu(b, nazov){ Panel.otvor(b, nazov); }
-
 /* ============================================================
    HLAVIČKA, PÄTA, STAV SERVERA
    ============================================================ */
 const IKONA = `<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="6" width="20" height="20" rx="4" fill="#2d7563"/><rect x="11" y="11" width="10" height="10" rx="2" fill="#f2b36a"/><path d="M10 2v4M16 2v4M22 2v4M10 26v4M16 26v4M22 26v4M2 10h4M2 16h4M2 22h4M26 10h4M26 16h4M26 22h4" stroke="#2d7563" stroke-width="2" stroke-linecap="round"/></svg>`;
 function vykresliRamec(){
   const str = document.body.dataset.strana;
-  const nav = [["zostavy","index.html","Hotové zostavy"],["konfigurator","konfigurator.html","Konfigurátor"],["komponenty","komponenty.html","Komponenty"],["poradca","poradca.html","Poradca"]];
+  const nav = [["konfigurator","index.html","Konfigurátor"],["poradca","poradca.html","Poradca"]];
   const h = document.createElement("header"); h.className = "hlavicka";
   h.innerHTML = `<div class="obal">
     <a class="znacka" href="index.html">${IKONA}<b>PC konfigurátor</b></a>
@@ -152,32 +151,5 @@ async function spusti(init, {katalog = true} = {}){
     for(;;){ await new Promise(r => setTimeout(r, 3000)); try{ await apiGet("/api/stav"); location.reload(); return; }catch(e){} }
   }
   init && init();
+  document.querySelector("main")?.insertAdjacentHTML("afterbegin", VAROVANIA.length ? `<div class="obal-varovanie">${varovanieOntologie()}</div>` : "");
 }
-
-/* ============================================================
-   NÁHĽAD A RIADOK HOTOVEJ ZOSTAVY
-   ============================================================ */
-function nahladSVG(b){ const a = activeCat, p = prevBuild; activeCat = null; prevBuild = structuredClone(b); const s = renderSVG(b); activeCat = a; prevBuild = p;
-  const L = LAYOUT[b.skrinka], m = 14; const vb = `${-m} ${469 - L.H - m} ${L.W + 2*m} ${L.H + 2*m}`;
-  return s.replace(/viewBox="[^"]*"/, `viewBox="${vb}"`).replace("<svg ", '<svg aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet" '); }
-function diely(b){
-  const g = b.grafika ? C[b.grafika] : null;
-  return [["Procesor", shortName(C[b.procesor])], ["Grafika", g ? shortName(g) : "integrovaná v procesore"], ["Pamäť", `${C[b.pamat].kap} GB ${C[b.pamat].typ}`],
-    ["Úložisko", b.ulozisko.map(i => C[i].kap >= 1000 ? (C[i].kap/1000) + " TB " + C[i].typ : C[i].kap + " GB").join(" + ")], ["Skrinka", C[b.skrinka].nazov]];
-}
-function zostavaRiadok(p){
-  const b = p.b, u = `konfigurator.html?zostava=${encodeURIComponent(p.id)}`;
-  return `<article class="zostava">
-    <a class="nahlad" href="${u}" tabindex="-1" aria-hidden="true">${nahladSVG(b)}</a>
-    <div><span class="trieda">${esc(TIERS[p.tier])}</span><h3><a href="${u}">${esc(p.nazov)}</a></h3>
-      <p class="urcenie">Na ${esc(p.ucel)}</p>
-      <dl class="diely">${diely(b).map(([k,v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>
-    <div class="akcie"><span class="cenovka"><b>${eur(price(b))}</b></span>
-      <a class="btn btn-1" href="${u}">Upraviť v konfigurátore</a>
-      <button class="btn btn-3" type="button" data-poradca="${esc(p.id)}">Opýtať sa poradcu</button></div>
-  </article>`;
-}
-document.addEventListener("click", e => {
-  const b = e.target.closest("[data-poradca]"); if(!b) return;
-  const p = PRESETS.find(x => x.id === b.dataset.poradca); if(p) opytajSaNaZostavu(p.b, p.nazov);
-});

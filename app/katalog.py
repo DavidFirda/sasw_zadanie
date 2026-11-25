@@ -1,4 +1,9 @@
+"""Katalóg konfigurátora zostavený SPARQL dopytmi nad ontológiou zo Zadania 1.
 
+Ontológia obsahuje všetko, čo súvisí s kompatibilitou (parametre, ceny,
+hotové zostavy). Súbor vizual.json dopĺňa iba vzhľad pre 3D model (farebný štýl,
+rozmiestnenie dielov v skrinke), ktorý do ontológie nepatrí.
+"""
 import json
 from collections import defaultdict
 

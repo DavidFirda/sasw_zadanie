@@ -1,9 +1,9 @@
 # PC konfigurátor s poradcom (RAG)
 
 Webová aplikácia nad jednou ontológiou, ontológiou PC konfigurátora zo Zadania 1
-(`data/ontologia/pc_konfigurator.owl`, vytvorená vo WebProtégé, SWRL pravidlá doplnené v Protégé): **hotové zostavy**, **3D konfigurátor**
-s kontrolou kompatibility, prehľad **komponentov** a **poradca**, ktorý odpovedá metódou RAG len z
-vlastných zdrojov: z ~10 PDF dokumentov (manuály a datasheety) a z tejto ontológie. Jazykový model aj embeddingy bežia lokálne cez [Ollamu](https://ollama.com).
+(`data/ontologia/pc_konfigurator.owl`, vytvorená vo WebProtégé, SWRL pravidlá doplnené v Protégé).
+Má dve stránky: **konfigurátor** s 3D modelom a kontrolou kompatibility a **poradcu**, ktorý odpovedá
+metódou RAG len z vlastných zdrojov: z ~10 PDF dokumentov (manuály a datasheety) a z tejto ontológie. Jazykový model aj embeddingy bežia lokálne cez [Ollamu](https://ollama.com).
 
 | Bod zadania 3 | Kde je splnený |
 |---|---|
@@ -92,7 +92,7 @@ vyhľadajte názov produktu so slovami „manual pdf".
 
 ```
 data/ontologia/pc_konfigurator.owl (RDF/XML z Protégé)
-  ├─► graf trojíc (rdflib) ─► SPARQL ─► /api/katalog ─► web: zostavy, 3D konfigurátor, komponenty
+  ├─► graf trojíc (rdflib) ─► SPARQL ─► /api/katalog ─► web: 3D konfigurátor
   └─► úryvky textu ─┐
 data/pdf/*.pdf ─────┴─► bge-m3 ─► vektory (data/.index/)
 otázka (+ zostava z konfigurátora) ─► bge-m3 ─► 6 najpodobnejších úryvkov ─► gemma3:4b ─► odpoveď s [1]…[6]
@@ -101,10 +101,10 @@ otázka (+ zostava z konfigurátora) ─► bge-m3 ─► 6 najpodobnejších ú
 **Konfigurátor.** Server pri štarte načíta ontológiu ako graf trojíc (`app/ontologia.py`,
 entity dostanú IRI podľa svojho `rdfs:label`) a katalóg číta SPARQL dopytmi (`app/katalog.py`):
 komponenty sú individuá tried Skrinka, Procesor, ZakladnaDoska, OperacnaPamat, GrafickaKarta,
-SSD_NVMe/SSD_SATA, Zdroj a VzduchovyChladic; hotové zostavy sú individuá triedy Zostava (testovacie
+SSD_NVMe/SSD_SATA, Zdroj a VzduchovyChladic; hotové zostavy (výber „Začať od") sú individuá triedy Zostava (testovacie
 zostavy sa vynechajú). Kompatibilita sa kontroluje podľa pravidiel R01–R16 (socket, typ RAM, rozmery,
 výkon zdroja); kliknutím na kód pravidla sa ukáže jeho SWRL zápis z ontológie. 3D model sa kreslí
-z rozmerov v ontológii (three.js); `data/vizual.json` dopĺňa len vzhľad (štýl skrinky, rozmiestnenie
+z rozmerov v ontológii (knižnica three.js sa načíta z CDN; bez internetu sa ukáže 2D bokorys); `data/vizual.json` dopĺňa len vzhľad (štýl skrinky, rozmiestnenie
 dielov), ktorý do ontológie nepatrí. Nový komponent pridáte do ontológie vo WebProtégé, stiahnete
 ju ako RDF/XML (`.owl`) do `data/ontologia/` a reštartujete server.
 
@@ -118,8 +118,8 @@ ju ako RDF/XML (`.owl`) do `data/ontologia/` a reštartujete server.
    Ak sú v indexe PDF, 2 z nich sú vždy najlepšie úryvky z PDF, aby sa manuály dostali do kontextu
    aj pri otázkach, kde podobnosťou vyhrávajú krátke úryvky z ontológie. Pri otázke na zostavu sa
    hľadá aj podľa jej dielov.
-4. *Generovanie*: `gemma3:4b` dostane očíslované úryvky, a ak sa pýtate z konfigurátora alebo
-   z hotových zostáv, aj danú zostavu s výsledkami kontrol. Odpovedá po slovensky len z nich
+4. *Generovanie*: `gemma3:4b` dostane očíslované úryvky, a ak sa pýtate z konfigurátora, aj
+   vašu aktuálnu zostavu s výsledkami kontrol. Odpovedá po slovensky len z nich
    a cituje ich ako `[1]`.
 5. *Web*: odpoveď prichádza priebežne; kliknutím na číslo sa ukáže presný úryvok (strana PDF
    alebo entita ontológie).
@@ -146,8 +146,15 @@ app/
   rag.py           poradca: zdroje, embeddingy, vyhľadávanie, odpoveď
   ontologia.py     ontológia zo Zadania 1 (.owl): graf trojíc, SWRL pravidlá, úryvky textu
   katalog_text.py  katalóg a aktuálna zostava ako text pre poradcu
-  static/          web: index.html (hotové zostavy), konfigurator.html, komponenty.html, poradca.html;
-                   js/chat.js je rozhovor s poradcom (stránka Poradca aj bočný panel)
+  static/          web
+    index.html     konfigurátor (úvodná stránka)
+    poradca.html   poradca
+    css/app.css    všetky štýly (jediný CSS súbor)
+    fonts/         písmo Archivo
+    js/core.js     katalóg z API, kontroly kompatibility, hlavička
+    js/konfigurator.js, render3d.js, render2d.js   konfigurátor, 3D model, 2D bokorys
+    js/chat.js     rozhovor s poradcom (stránka Poradca aj bočný panel)
+    js/poradca.js  stránka Poradca: zdroje a pripravené otázky
 data/
   ontologia/       ontológia zo Zadania 1 (jediný zdroj dát konfigurátora aj poradcu)
   vizual.json      vzhľad 3D modelu (štýl skriniek, rozmiestnenie)

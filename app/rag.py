@@ -1,4 +1,11 @@
+"""Jadro RAG: načítanie zdrojov, embeddingy, vyhľadávanie a generovanie odpovede.
 
+Zdroje: PDF dokumenty (data/pdf), ontológia zo Zadania 1 (data/ontologia/*.owl)
+a katalóg konfigurátora (komponenty, pravidlá, hotové zostavy).
+Všetko beží lokálne cez Ollamu:
+  - EMBED_MODEL vytvára vektory úryvkov aj otázky,
+  - LLM_MODEL píše odpoveď len z nájdených úryvkov.
+"""
 import hashlib
 import json
 import os

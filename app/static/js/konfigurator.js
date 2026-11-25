@@ -3,18 +3,8 @@
 let B = null, lenKomp = false, rezim = "3d";
 
 spusti(() => {
-  const q = new URLSearchParams(location.search);
-  const zPreset = PRESETS.find(p => p.id === q.get("zostava"));
-  const zakladna = PRESETS[0];
-  B = zPreset ? structuredClone(zPreset.b) : Uloz.get("zostava", null);
-  if(!platnaZostava(B)) B = structuredClone(zakladna.b);
-  const pridat = q.get("pridat");
-  if(pridat && C[pridat]){
-    const k = C[pridat].kat;
-    B = KATMAP[k].multi ? Object.assign(B, {ulozisko: [...new Set([...B.ulozisko, pridat])]}) : Object.assign(B, {[k]: pridat});
-    activeCat = k; toast(`${C[pridat].nazov} je v zostave`);
-  }
-  if(q.has("zostava") || q.has("pridat")){ q.delete("zostava"); q.delete("pridat"); history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : "")); }
+  B = Uloz.get("zostava", null);                         // rozpracovaná zostava z minula
+  if(!platnaZostava(B)) B = structuredClone(PRESETS[0].b);
   if(!V3.ok){ rezim = "2d"; document.querySelector('[data-mode="3d"]').disabled = true; }
 
   window.klikNaDiel = cat => zvolKategoriu(cat, true);   // volá 3D náhľad
@@ -31,7 +21,7 @@ spusti(() => {
   $("preset").onchange = e => { const p = PRESETS.find(x => x.id === e.target.value); if(p) nastav(structuredClone(p.b), `Načítaná zostava ${p.nazov}`); };
   document.querySelector(".pohlad-prep .prepinac").onclick = e => { const b = e.target.closest("button"); if(!b || b.disabled) return; rezim = b.dataset.mode; kresli(); };
   $("kontroly").onclick = e => { const r = e.target.closest(".pravidlo[data-r]"); if(r) ukazPravidlo(r.dataset.r); };
-  $("btnPoradca").onclick = () => opytajSaNaZostavu(B, nazovZostavy(B));
+  $("btnPoradca").onclick = () => Panel.otvor(B, nazovZostavy(B));   // bočný poradca (chat.js)
   kresli();
 });
 
