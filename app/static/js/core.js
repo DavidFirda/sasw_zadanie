@@ -142,5 +142,4 @@ async function spusti(init, {katalog = true} = {}){
     for(;;){ await new Promise(r => setTimeout(r, 3000)); try{ await apiGet("/api/stav"); location.reload(); return; }catch(e){} }
   }
   init && init();
-  document.querySelector("main")?.insertAdjacentHTML("afterbegin", VAROVANIA.length ? `<div class="obal-varovanie">${varovanieOntologie()}</div>` : "");
 }
