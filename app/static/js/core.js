@@ -18,13 +18,6 @@ async function nacitajKatalog(){
   if(k.varovania?.length) VAROVANIA = k.varovania;
 }
 let VAROVANIA = [];
-/* Upozornenie na chybné údaje v ontológii (napr. zlúčené form faktory). */
-function varovanieOntologie(){
-  if(!VAROVANIA.length) return "";
-  return `<details class="info-box"><summary><b>Ontológia obsahuje protichodné údaje, kontrola kompatibility nemusí byť správna.</b></summary>
-    <ul>${VAROVANIA.map(v => `<li>${esc(v)}</li>`).join("")}</ul>
-    <p class="maly jemny">Opravte ontológiu v Protégé, uložte ju do <code>data/ontologia/</code> a reštartujte server.</p></details>`;
-}
 
 /* ============================================================
    KONTROLY KOMPATIBILITY (pravidlá R01–R16 z ontológie, uzavretý svet)
