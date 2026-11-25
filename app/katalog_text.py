@@ -1,5 +1,4 @@
-"""Text z katalógu konfigurátora pre RAG: komponenty, pravidlá, hotové zostavy
-a popis zostavy, ktorú má používateľ práve otvorenú v konfigurátore."""
+
 from katalog import get, KAT, TIERS
 from kontrola import checks, missing, price, power, FF_NAME
 

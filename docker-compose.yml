@@ -1,11 +1,7 @@
-# PC konfigurátor: 3D konfigurátor nad ontológiou a poradca (RAG) nad PDF a ontológiou
-# Spustenie: docker compose up  ->  http://localhost:8000
-# Predvolene sa server pripája na Ollamu nainštalovanú priamo v počítači.
-# Ollama v Dockeri: docker compose --profile ollama up  (a v .env OLLAMA_URL=http://ollama:11434)
 services:
   app:
     image: ${APP_IMAGE:-pc-konfigurator:local}
-    build: ./app                      # ak image nie je stiahnutý, postaví sa lokálne
+    build: ./app                      
     ports:
       - "8000:8000"
     environment:
@@ -16,7 +12,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./data:/data                  # PDF, ontológie a index poradcu
+      - ./data:/data                  
 
   ollama:
     image: ollama/ollama:latest

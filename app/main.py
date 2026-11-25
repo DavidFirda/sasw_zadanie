@@ -1,5 +1,4 @@
-"""Webový server: katalóg konfigurátora z ontológie (SPARQL) a poradca
-(RAG nad PDF, ontológiou zo Zadania 1 a katalógom, model beží lokálne v Ollame)."""
+
 import json
 import logging
 import os

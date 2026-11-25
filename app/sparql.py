@@ -1,9 +1,4 @@
-"""SPARQL nad ontológiou zo Zadania 1 (rdflib v pamäti).
 
-Ontológia data/ontologia/*.owl (RDF/XML z Protégé) sa pri štarte načíta ako
-graf trojíc (app/ontologia.py) a všetky údaje pre konfigurátor sa z neho čítajú
-SPARQL dopytmi.
-"""
 import logging
 import os
 from decimal import Decimal

@@ -1,10 +1,4 @@
-"""Kontrola kompatibility na serveri.
 
-Pravidlá R01–R16 zodpovedajú SWRL pravidlám v ontológii, vyhodnocujú sa však
-v uzavretom svete (ako SPARQL dopyt s FILTER NOT EXISTS), takže vieme povedať,
-že zostava je bez chyby. Výsledok kontrol dostane poradca, keď sa ho používateľ
-pýta na zostavu otvorenú v konfigurátore.
-"""
 from katalog import get, KAT
 
 MOUNT_SK = {"top": "hore", "front": "vpredu", "side": "na boku", "bottom": "dole"}

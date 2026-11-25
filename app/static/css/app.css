@@ -1,6 +1,4 @@
-/* PC konfigurátor – štýly
-   Paleta: svetlá šalviová šedá, pokojná zelenomodrá na ovládanie,
-   jediný teplý prvok je marhuľová cenovka (a citácie poradcu). */
+
 @font-face {
   font-family: "Archivo"; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
   src: url(../fonts/archivo-latin-wdth-normal.woff2) format("woff2");

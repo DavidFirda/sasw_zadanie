@@ -8,8 +8,6 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt
 const eur = n => new Intl.NumberFormat("sk-SK", {style:"currency", currency:"EUR", maximumFractionDigits: n % 1 ? 2 : 0}).format(n);
 const $ = id => document.getElementById(id);
 
-/* Na GitHub Pages je len web, server s katalógom a poradcom beží u vás na localhoste.
-   Inú adresu servera nastavíte v URL: ?api=http://localhost:9000 */
 const API_BASE = new URLSearchParams(location.search).get("api") ?? (location.hostname.endsWith("github.io") ? "http://localhost:8000" : "");
 async function apiGet(u){ const r = await fetch(API_BASE + u); if(!r.ok) throw new Error(`${u}: ${r.status}`); return r.json(); }
 
